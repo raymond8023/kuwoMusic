@@ -22,10 +22,10 @@ def getAlbumInfo(driver, url):
         songList.append(song.text)
     return album.text,singer.text,songList
 
-def getMusic(album,singer,song,index):
+def getMusic(album,singer,song,index,keywords):
     search_url = 'http://www.kuwo.cn/api/www/search/searchMusicBykeyWord?'
     search_data = {
-        'key': song,
+        'key': keywords,
         'pn': '1',
         'rn': '512',
         'httpsStatus': '1',
@@ -68,6 +68,8 @@ def getMusic(album,singer,song,index):
 
 def downloadMusic(musicUrl,index,album,singer,song):
     directory = "./" + singer + "-" + album + "/"
+    if '?' in directory:
+        directory = directory.replace('?','？')
     if not os.path.exists(directory):
         os.mkdir(directory)
     fileName = directory + str(index+1) + ". " + song + " - " + singer + ".mp3"
@@ -76,7 +78,8 @@ def downloadMusic(musicUrl,index,album,singer,song):
         # print("requests over")
         with open(fileName, 'wb') as file:
             file.write(responseMusic.content)
-            print("下载成功:",index+1,song)
+            # file.close()
+        print("下载成功:",index+1,song)
         # print("write over")
         fixFileInfo(fileName,album,singer,song,index+1)
     except Exception as e:
@@ -104,15 +107,19 @@ if __name__ == '__main__':
     parser.add_argument('--url', type=str, help='url')
     args = parser.parse_args()
     url = args.url
-    # url = 'http://www.kuwo.cn/album_detail/555949'
+    # url = 'http://www.kuwo.cn/album_detail/10157'
     if url==None:
         url=input("请粘贴酷我（kuwo.cn）网站中的专辑页面（形如：http://www.kuwo.cn/album_detail/xxxxxx）:")
     # 获取专辑名、歌手名、歌曲名单
     album,singer,songList=getAlbumInfo(driver,url)
     # album,singer,songList='周杰伦的床边故事','周杰伦',['不该 (with aMEI)']
     for i in range(len(songList)):
-        musicUrl = getMusic(album,singer,songList[i],i)
+        keywords = singer + " " + songList[i]
+        musicUrl = getMusic(album,singer,songList[i],i,keywords)
+        # if musicUrl ==None:
+        #     musicUrl = getMusic(album, singer, songList[i], i, songList[i])
         if musicUrl != None:
             downloadMusic(musicUrl,i,album,singer,songList[i])
     print("爬取完成，按任意键关闭窗口。")
     os.system("pause")
+    os.system("exit")
